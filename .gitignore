@@ -27,3 +27,4 @@ hs_err_pid*
 /mybatis/IPersistence_test/IPersistence_test.iml
 /mybatis/IPersistence_test/target/
 /mybatis/IPersistence/target/
+/mybatis/target/maven-archiver/pom.properties
