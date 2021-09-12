@@ -30,3 +30,6 @@ hs_err_pid*
 /mybatis/target/maven-archiver/pom.properties
 /spring/lagou-transfer-iocxml/target/
 /spring/lagou-transfer-iocxml/.idea/
+/demo-others/target/
+/spring/lagou-transfer-ioc-anno/target/
+/spring/lagou-transfer-transaction/target/
