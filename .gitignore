@@ -28,3 +28,5 @@ hs_err_pid*
 /mybatis/IPersistence_test/target/
 /mybatis/IPersistence/target/
 /mybatis/target/maven-archiver/pom.properties
+/spring/lagou-transfer-iocxml/target/
+/spring/lagou-transfer-iocxml/.idea/
