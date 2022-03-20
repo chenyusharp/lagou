@@ -1,8 +1,14 @@
 package com.lagou.redis;
 
+import static com.lagou.redis.EncodingEnum.REDIS_ENCODING_HT;
+import static com.lagou.redis.TypeEnum.REDIS_HASH;
 import static com.lagou.redis.TypeEnum.REDIS_LIST;
 import static com.lagou.redis.TypeEnum.REDIS_STRING;
 
+import com.lagou.redis.dataStruct.Dict;
+import com.lagou.redis.dataStruct.DictEntry;
+import com.lagou.redis.dataStruct.DictEntry.Union;
+import com.lagou.redis.dataStruct.DictHt;
 import com.lagou.redis.dataStruct.ListNode;
 import com.lagou.redis.dataStruct.RedisList;
 import com.lagou.redis.dataStruct.SdsHdr;
@@ -10,6 +16,7 @@ import com.lagou.redis.dataStruct.ZipList;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -23,6 +30,19 @@ public class CommodInterface {
 
 
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?[0-9]*$");
+
+
+    //字典
+    public static final Dict dict = new Dict();
+    //哈希表
+    public static DictHt[] dictHts = new DictHt[2];
+
+    //初始化操作
+    {
+        dictHts[0] = new DictHt();
+        dictHts[1] = new DictHt();
+        dict.setHt(dictHts);
+    }
 
 
     public static void main(String[] args) {
@@ -50,7 +70,7 @@ public class CommodInterface {
                 redisObject.setType(REDIS_STRING);
                 redisObject.setEncoding(EncodingEnum.REDIS_ENCODING_INT);
                 redisObject.setPtr(value[0]);
-            } else if ((String.valueOf(value[0]).getBytes(StandardCharsets.UTF_8)).length > 32) {
+            } else if ((String.valueOf(value[0]).getBytes(StandardCharsets.UTF_8)).length > 39) {
                 redisObject = buildSdsHdr(value[0]);
             } else {
                 //TODO embstr的连续的内存怎么表示？
@@ -125,6 +145,70 @@ public class CommodInterface {
     }
 
 
+    /**
+     * 对应于redis中的hset命令
+     *
+     * @param values 参数
+     * @return redisObject
+     */
+    private boolean hSet(String key, Object[]... values) {
+        //首先判断key是否存在
+        DictHt[] dictHts = dict.getHt();
+        DictHt dictHt = dictHts[0];
+        int position = (int) (DictHt.hashFunction(key) & (dictHt.getSize() - 1));
+        if (dictHt.getTable()[position] != null) {
+            //覆盖
+            Dict dict = (Dict) dictHt.getTable()[position].getUnion().getVal();
+            DictHt dictHt1 = dict.getHt()[0];
+            DictEntry[] dictEntries = dictHt1.getTable();
+            //暂不考虑hash冲突
+            DictEntry[] dictEntries1 = new DictEntry[dictEntries.length + values.length];
+
+
+        } else {
+            //新增
+            Dict dict = new Dict();
+            dict.setReHashIndex(0);
+            DictHt[] dictHtArray = new DictHt[]{new DictHt(), new DictHt()};
+
+            DictEntry[] dictEntries = new DictEntry[values.length];
+            extracted(dictHtArray[0], dictEntries, values);
+            dict.setHt(dictHtArray);
+            RedisObject redisObject = new RedisObject();
+            redisObject.setEncoding(REDIS_ENCODING_HT);
+            redisObject.setType(REDIS_HASH);
+            redisObject.setPtr(dict);
+
+            DictEntry dictEntry = dictHt.getTable()[position];
+            dictEntry.setKey(key);
+            dictEntry.setUnion(new Union() {{
+                setVal(dict);
+            }});
+        }
+        return true;
+    }
+
+    private void extracted(DictHt dictHt1, DictEntry[] dictEntries, Object[][] values) {
+        for (Object[] objects : values) {
+            String pairKey = (String) objects[0];
+            Object pairValue = objects[1];
+            //位置
+            int currPos = DictHt.hashFunction(pairKey) & (dictEntries.length - 1);
+            DictEntry dictEntry = new DictEntry();
+            dictEntry.setKey(pairKey);
+            dictEntry.setUnion(new Union() {
+                {
+                    setVal(pairValue);
+                }
+            });
+            dictEntries[currPos] = dictEntry;
+        }
+        dictHt1.setSize(values.length);
+        dictHt1.setSizeMask(values.length - 1);
+        dictHt1.setTable(dictEntries);
+    }
+
+
     private static RedisList convertArray2RedisList(Object... values) {
         RedisList redisList = new RedisList();
         ListNode head = new ListNode();
@@ -143,7 +227,6 @@ public class CommodInterface {
         }
         redisList.setLen(values.length);
         return redisList;
-
     }
 
     /**
