@@ -16,7 +16,6 @@ import com.lagou.redis.dataStruct.ZipList;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.regex.Pattern;
 
 /**
