@@ -10,17 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import javax.annotation.Resource;
-import jdk.nashorn.internal.ir.annotations.Reference;
 import lombok.Data;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
 /**
@@ -77,7 +73,8 @@ public class KafkaConsumerThread extends Thread {
                     Set<TopicPartition> topicPartitions = records.partitions();
                     topicPartitions.forEach(tp -> {
                         List<ConsumerRecord<String, String>> recordList = records.records(tp);
-                        recordList.forEach(record -> dynamicThreadPoolExecutor.submit(new ExecuteHandler(record, tp, goodsService)));
+                        recordList.forEach(
+                                record -> dynamicThreadPoolExecutor.submit(new ExecuteHandler(record, tp, goodsService)));
                     });
                     synchronized (offsets) {
                         if (!offsets.isEmpty()) {
