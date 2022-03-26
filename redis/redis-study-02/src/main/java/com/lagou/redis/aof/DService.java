@@ -43,6 +43,9 @@ public class DService {
      */
     public static final int pageSize = 100;
     public static final String deleteTopic = "goodDelete";
+    /**
+     * 动态线程池，支持动态从apollo或者是nacos中获取
+     */
     @Resource
     private ThreadPoolExecutor dynamicThreadPoolExecutor;
 
